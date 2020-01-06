@@ -9,12 +9,12 @@ use winit_input_helper::WinitInputHelper;
 
 use std::time::Instant;
 
-const SURFACE_WIDTH: u32 = 320;
-const SURFACE_HEIGHT: u32 = 240;
+const SURFACE_WIDTH: u32 = 640;
+const SURFACE_HEIGHT: u32 = 480;
 
 fn clear(screen: &mut [u8]) {
-    for (i, byte) in screen.iter_mut().enumerate() {
-        *byte = if i % 4 == 3 { 255 } else { 0 };
+    for bytes in screen.chunks_exact_mut(4) {
+        bytes.copy_from_slice(&[0, 0, 0, 255]);
     }
 }
 
