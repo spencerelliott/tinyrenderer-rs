@@ -9,8 +9,10 @@ use winit_input_helper::WinitInputHelper;
 
 use std::time::Instant;
 
-const SURFACE_WIDTH: u32 = 640;
-const SURFACE_HEIGHT: u32 = 480;
+const SURFACE_WIDTH: u32 = 500;
+const SURFACE_HEIGHT: u32 = 375;
+
+const MAX_INDEX: usize = (SURFACE_WIDTH * SURFACE_HEIGHT) as usize;
 
 fn clear(screen: &mut [u8]) {
     for bytes in screen.chunks_exact_mut(4) {
@@ -20,12 +22,58 @@ fn clear(screen: &mut [u8]) {
 
 fn set_pixel(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
     let index = (((y * SURFACE_WIDTH) + x) * 4) as usize;
+
+    if index > MAX_INDEX {
+        return;
+    }
+
     let pixel_slice = &mut frame[index..index+4];
 
     pixel_slice[0] = rgba[0];
     pixel_slice[1] = rgba[1];
     pixel_slice[2] = rgba[2];
     pixel_slice[3] = rgba[3];
+}
+
+fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
+    let steep = i32::abs(x0 as i32 - x1 as i32) < i32::abs(y0 as i32 - y1 as i32);
+
+    let mut m_x0 = if steep { x1 } else { x0 };
+    let mut m_y0 = if steep { y1 } else { y0 };
+    let mut m_x1 = if steep { x0 } else { x1 };
+    let mut m_y1 = if steep { y0 } else { y1 };
+
+    if m_x0 > m_x1 {
+        std::mem::swap(&mut m_x0, &mut m_x1);
+        std::mem::swap(&mut m_y0, &mut m_y1);
+    }
+
+    let dx = m_x1 as i32 - m_x0 as i32;
+    let dy = m_y1 as i32 - m_y0 as i32;
+
+    let derror = i32::abs(dy) * 2;
+    let mut error = 0;
+
+    let mut y = m_y0;
+
+    for x in x0..x1 {
+        if steep {
+            set_pixel(frame, y, x, rgba);
+        } else {
+            set_pixel(frame, x, y, rgba);
+        }
+
+        error += derror;
+
+        if error > dx {
+            if m_y1 > m_y0 { 
+                y = y + 1;
+            } else { 
+                y = y - 1; 
+            }
+            error -= dx * 2;
+        }
+    }
 }
 
 fn main() -> Result<(), Error> {
@@ -35,7 +83,7 @@ fn main() -> Result<(), Error> {
     let window = {
         let size = LogicalSize::new(1024 as f64, 768 as f64);
         WindowBuilder::new()
-            .with_title("Hello tinyrenderer")
+            .with_title("tinyrenderer")
             .with_inner_size(size)
             .build(&event_loop)
             .unwrap()
@@ -51,6 +99,8 @@ fn main() -> Result<(), Error> {
 
     let mut last_frame = Instant::now();
 
+    let line_color = [255, 0, 0, 0];
+
     event_loop.run(move |event, _, control_flow| {
         if let Event::WindowEvent {
             event: WindowEvent::RedrawRequested,
@@ -61,9 +111,9 @@ fn main() -> Result<(), Error> {
 
             let frame = pixels.get_frame();
             clear(frame);
-            set_pixel(frame, 10, 10, [255, 0, 0, 0]);
-            set_pixel(frame, 11, 10, [255, 0, 0, 0]);
-            set_pixel(frame, 12, 10, [255, 0, 0, 0]);
+            line(frame, 13, 20, 80, 40, line_color);
+            line(frame, 20, 13, 40, 80, line_color);
+            line(frame, 80, 40, 13, 20, line_color);
             pixels.render();
 
             last_frame = Instant::now();
