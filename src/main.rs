@@ -23,7 +23,7 @@ fn clear(screen: &mut [u8]) {
 fn set_pixel(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
     let index = (((y * SURFACE_WIDTH) + x) * 4) as usize;
 
-    if index > MAX_INDEX {
+    if index > MAX_INDEX*4 {
         return;
     }
 
@@ -39,9 +39,9 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
     let steep = i32::abs(x0 as i32 - x1 as i32) < i32::abs(y0 as i32 - y1 as i32);
 
     let mut m_x0 = if steep { x1 } else { x0 };
-    let mut m_y0 = if steep { y1 } else { y0 };
+    let mut m_y0 = if steep { SURFACE_HEIGHT - y1 } else { SURFACE_HEIGHT - y0 };
     let mut m_x1 = if steep { x0 } else { x1 };
-    let mut m_y1 = if steep { y0 } else { y1 };
+    let mut m_y1 = if steep { SURFACE_HEIGHT - y0 } else { SURFACE_HEIGHT - y1 };
 
     if m_x0 > m_x1 {
         std::mem::swap(&mut m_x0, &mut m_x1);
@@ -56,7 +56,7 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
 
     let mut y = m_y0;
 
-    for x in x0..x1 {
+    for x in m_x0..m_x1 {
         if steep {
             set_pixel(frame, y, x, rgba);
         } else {
@@ -99,7 +99,8 @@ fn main() -> Result<(), Error> {
 
     let mut last_frame = Instant::now();
 
-    let line_color = [255, 0, 0, 0];
+    let red = [255, 0, 0, 0];
+    let green = [0, 255, 0, 0];
 
     event_loop.run(move |event, _, control_flow| {
         if let Event::WindowEvent {
@@ -111,9 +112,9 @@ fn main() -> Result<(), Error> {
 
             let frame = pixels.get_frame();
             clear(frame);
-            line(frame, 13, 20, 80, 40, line_color);
-            line(frame, 20, 13, 40, 80, line_color);
-            line(frame, 80, 40, 13, 20, line_color);
+            line(frame, 13, 20, 80, 40, red);
+            line(frame, 20, 13, 40, 80, red);
+            line(frame, 80, 40, 100, 35, green);
             pixels.render();
 
             last_frame = Instant::now();
