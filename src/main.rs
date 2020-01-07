@@ -2,6 +2,9 @@ extern crate pixels;
 
 mod model;
 
+use std::fs::File;
+use std::path::Path;
+
 use pixels::{wgpu::Surface, Error, Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
@@ -10,6 +13,8 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use std::time::Instant;
+
+use model::Model;
 
 const SURFACE_WIDTH: u32 = 500;
 const SURFACE_HEIGHT: u32 = 375;
@@ -79,6 +84,12 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
 }
 
 fn main() -> Result<(), Error> {
+    let model_path = Path::new("./obj/african_head.obj");
+    println!("{:?}", model_path);
+    let model_file = File::open(model_path).unwrap();
+
+    let parsed_model = Model::new(&model_file);
+
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
 
@@ -141,4 +152,6 @@ fn main() -> Result<(), Error> {
             window.request_redraw();
         }
     });
+
+    Ok(())
 }
