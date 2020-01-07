@@ -1,5 +1,7 @@
 extern crate pixels;
 
+mod model;
+
 use pixels::{wgpu::Surface, Error, Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode, WindowEvent};
@@ -21,7 +23,7 @@ fn clear(screen: &mut [u8]) {
 }
 
 fn set_pixel(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
-    let index = (((y * SURFACE_WIDTH) + x) * 4) as usize;
+    let index = ((((SURFACE_HEIGHT-y) * SURFACE_WIDTH) + x) * 4) as usize;
 
     if index > MAX_INDEX*4 {
         return;
@@ -39,9 +41,9 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
     let steep = i32::abs(x0 as i32 - x1 as i32) < i32::abs(y0 as i32 - y1 as i32);
 
     let mut m_x0 = if steep { x1 } else { x0 };
-    let mut m_y0 = if steep { SURFACE_HEIGHT - y1 } else { SURFACE_HEIGHT - y0 };
+    let mut m_y0 = if steep { y1 } else { y0 };
     let mut m_x1 = if steep { x0 } else { x1 };
-    let mut m_y1 = if steep { SURFACE_HEIGHT - y0 } else { SURFACE_HEIGHT - y1 };
+    let mut m_y1 = if steep { y0 } else { y1 };
 
     if m_x0 > m_x1 {
         std::mem::swap(&mut m_x0, &mut m_x1);
@@ -114,7 +116,7 @@ fn main() -> Result<(), Error> {
             clear(frame);
             line(frame, 13, 20, 80, 40, red);
             line(frame, 20, 13, 40, 80, red);
-            line(frame, 80, 40, 100, 35, green);
+            line(frame, 40, 40, 80, 40, green);
             pixels.render();
 
             last_frame = Instant::now();
