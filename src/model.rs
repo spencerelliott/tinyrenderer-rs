@@ -47,7 +47,7 @@ impl WaveformType for Vertex {
     }
 
     const DESCRIPTOR: &'static str = "v";
-    const REGEX: &'static str = r"v (?P<x>[-]?\d*\.?\d*) (?P<y>[-]?\d*\.?\d*) (?P<z>[-]?\d*\.?\d*)";
+    const REGEX: &'static str = r"v (?P<x>(([-]?\d*\.?\d*)(e-\d*)?)) (?P<y>(([-]?\d*\.?\d*)(e-\d*)?)) (?P<z>(([-]?\d*\.?\d*)(e-\d*)?))";
 }
 
 struct Triangle {
