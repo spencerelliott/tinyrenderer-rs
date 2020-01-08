@@ -21,17 +21,29 @@ struct Vertex {
     z: f32,
 }
 
+impl Vertex {
+    const ZERO: Vertex = Vertex {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+}
+
 impl WaveformType for Vertex {
     fn new(vertex: String) -> Vertex {
         let vertex_regex = Self::regex();
 
-        let captured_vertex = vertex_regex.captures(&vertex).unwrap();
-
-        Vertex {
-            x: captured_vertex["x"].parse().unwrap(),
-            y: captured_vertex["y"].parse().unwrap(),
-            z: captured_vertex["z"].parse().unwrap(),
+        if let Some(captured_vertex) = vertex_regex.captures(&vertex)  {
+            return Vertex {
+                x: captured_vertex["x"].parse().unwrap(),
+                y: captured_vertex["y"].parse().unwrap(),
+                z: captured_vertex["z"].parse().unwrap(),
+            }
+        } else {
+            println!("ERROR: Could not convert {:?}", vertex);
         }
+
+        Vertex::ZERO
     }
 
     const DESCRIPTOR: &'static str = "v";
