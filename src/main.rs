@@ -16,10 +16,8 @@ use std::time::Instant;
 
 use model::Model;
 
-const SURFACE_WIDTH: u32 = 500;
-const SURFACE_HEIGHT: u32 = 375;
-
-const MAX_INDEX: usize = (SURFACE_WIDTH * SURFACE_HEIGHT) as usize;
+const SURFACE_WIDTH: u32 = 1024;
+const SURFACE_HEIGHT: u32 = 768;
 
 fn clear(screen: &mut [u8]) {
     for bytes in screen.chunks_exact_mut(4) {
@@ -28,11 +26,11 @@ fn clear(screen: &mut [u8]) {
 }
 
 fn set_pixel(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
-    let index = ((((SURFACE_HEIGHT-y) * SURFACE_WIDTH) + x) * 4) as usize;
-
-    if index > MAX_INDEX*4 {
+    if x >= SURFACE_WIDTH || y >= SURFACE_HEIGHT {
         return;
     }
+
+    let index = ((((SURFACE_HEIGHT-y) * SURFACE_WIDTH) + x) * 4) as usize;
 
     let pixel_slice = &mut frame[index..index+4];
 
@@ -112,6 +110,7 @@ fn main() -> Result<(), Error> {
 
     let mut last_frame = Instant::now();
 
+    let white = [0, 0, 0, 0];
     let red = [255, 0, 0, 0];
     let green = [0, 255, 0, 0];
 
@@ -125,9 +124,19 @@ fn main() -> Result<(), Error> {
 
             let frame = pixels.get_frame();
             clear(frame);
-            line(frame, 13, 20, 80, 40, red);
-            line(frame, 20, 13, 40, 80, red);
-            line(frame, 40, 40, 80, 40, green);
+            for face in parsed_model.iter_faces() {
+                for vert_idx in 0..3 {
+                    let v0 = parsed_model.get_vertex(face.point[vert_idx] as usize).unwrap();
+                    let v1 = parsed_model.get_vertex(face.point[(vert_idx + 1) % 3] as usize).unwrap();
+
+                    let x0 = ((v0.x + 1.0) * SURFACE_WIDTH as f32 / 4.0).round() as u32;
+                    let y0 = ((v0.y + 1.0) * SURFACE_HEIGHT as f32 / 4.0).round() as u32;
+                    let x1 = ((v1.x + 1.0) * SURFACE_WIDTH as f32 / 4.0).round() as u32;
+                    let y1 = ((v1.y + 1.0) * SURFACE_HEIGHT as f32 / 4.0).round() as u32;
+
+                    line(frame, x0, y0, x1, y1, white);
+                }
+            }
             pixels.render();
 
             last_frame = Instant::now();
