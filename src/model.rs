@@ -212,14 +212,14 @@ impl Model {
     }
 
     pub fn get_normal(&self, i: usize) -> Option<&Normal> {
-        self.normals.get(i)
+        self.normals.get(i-1)
     }
 
     pub fn get_vertex(&self, i: usize) -> Option<&Vertex> {
-        self.vertices.get(i)
+        self.vertices.get(i-1)
     }
 
     pub fn get_texcoord(&self, i: usize) -> Option<&TextureCoordinate> {
-        self.texcoords.get(i)
+        self.texcoords.get(i-1)
     }
 }
