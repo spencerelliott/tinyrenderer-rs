@@ -7,10 +7,6 @@ use std::io::{prelude::*, BufReader};
 trait WaveformType {
     fn new(obj_string: String) -> Self;
 
-    fn regex() -> Regex {
-        Regex::new(Self::REGEX).unwrap()
-    }
-
     const DESCRIPTOR: &'static str;
     const REGEX: &'static str;
 }
@@ -31,9 +27,11 @@ impl Vertex {
 
 impl WaveformType for Vertex {
     fn new(vertex: String) -> Vertex {
-        let vertex_regex = Self::regex();
+        lazy_static! {
+            static ref TYPE_REGEX: Regex = Regex::new(Vertex::REGEX).unwrap();
+        }
 
-        if let Some(captured_vertex) = vertex_regex.captures(&vertex)  {
+        if let Some(captured_vertex) = TYPE_REGEX.captures(&vertex)  {
             return Vertex {
                 x: captured_vertex["x"].parse().unwrap(),
                 y: captured_vertex["y"].parse().unwrap(),
@@ -66,9 +64,11 @@ impl TextureCoordinate {
 
 impl WaveformType for TextureCoordinate {
     fn new(texcoord: String) -> TextureCoordinate {
-        let tex_regex = Self::regex();
+        lazy_static! {
+            static ref TYPE_REGEX: Regex = Regex::new(TextureCoordinate::REGEX).unwrap();
+        }
 
-        if let Some(captured_texcoords) = tex_regex.captures(&texcoord) {
+        if let Some(captured_texcoords) = TYPE_REGEX.captures(&texcoord) {
             return TextureCoordinate {
                 u: captured_texcoords["u"].parse().unwrap(),
                 v: captured_texcoords["v"].parse().unwrap(),
@@ -101,7 +101,11 @@ impl Normal {
 
 impl WaveformType for Normal {
     fn new(normal: String) -> Normal {
-        if let Some(captured_normal) = Self::regex().captures(&normal) {
+        lazy_static! {
+            static ref TYPE_REGEX: Regex = Regex::new(Normal::REGEX).unwrap();
+        }
+
+        if let Some(captured_normal) = TYPE_REGEX.captures(&normal) {
             return Normal {
                 x: captured_normal["x"].parse().unwrap(),
                 y: captured_normal["y"].parse().unwrap(),
@@ -126,7 +130,11 @@ pub struct Face {
 
 impl WaveformType for Face {
     fn new(face: String) -> Face {
-        if let Some(captured_face) = Self::regex().captures(&face) {
+        lazy_static! {
+            static ref TYPE_REGEX: Regex = Regex::new(Face::REGEX).unwrap();
+        }
+
+        if let Some(captured_face) = TYPE_REGEX.captures(&face) {
             return Face {
                 point: [
                     captured_face["px"].parse().unwrap(),
