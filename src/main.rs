@@ -5,6 +5,7 @@ extern crate pixels;
 mod model;
 
 use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 
 use pixels::{wgpu::Surface, Error, Pixels, SurfaceTexture};
@@ -18,13 +19,15 @@ use std::time::Instant;
 
 use model::Model;
 
-const SURFACE_WIDTH: u32 = 512;
-const SURFACE_HEIGHT: u32 = 384;
+const SURFACE_WIDTH: u32 = 800;
+const SURFACE_HEIGHT: u32 = 600;
 
-fn clear(screen: &mut [u8]) {
-    for bytes in screen.chunks_exact_mut(4) {
-        bytes.copy_from_slice(&[0, 0, 0, 255]);
-    }
+const BUFFER_SIZE: usize = (SURFACE_HEIGHT * SURFACE_WIDTH * 4) as usize;
+
+const CLEAR_BUFFER: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+
+fn clear(mut screen: &mut [u8]) {
+    screen.write(&CLEAR_BUFFER).unwrap();
 }
 
 fn set_pixel(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
@@ -44,10 +47,15 @@ fn set_pixel(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
 fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
     let steep = i32::abs(x0 as i32 - x1 as i32) < i32::abs(y0 as i32 - y1 as i32);
 
-    let mut m_x0 = if steep { x1 } else { x0 };
-    let mut m_y0 = if steep { y1 } else { y0 };
-    let mut m_x1 = if steep { x0 } else { x1 };
-    let mut m_y1 = if steep { y0 } else { y1 };
+    let mut m_x0 = x0;
+    let mut m_y0 = y0;
+    let mut m_x1 = x1;
+    let mut m_y1 = y1;
+
+    if steep {
+        std::mem::swap(&mut m_x0, &mut m_y0);
+        std::mem::swap(&mut m_x1, &mut m_y1);
+    }
 
     if m_x0 > m_x1 {
         std::mem::swap(&mut m_x0, &mut m_x1);
@@ -85,8 +93,8 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
 fn main() -> Result<(), Error> {
     let model_path = Path::new("./obj/african_head.obj");
     println!("{:?}", model_path);
-    let model_file = File::open(model_path).unwrap();
 
+    let model_file = File::open(model_path).unwrap();
     let parsed_model = Model::new(&model_file);
 
     let event_loop = EventLoop::new();
@@ -110,6 +118,8 @@ fn main() -> Result<(), Error> {
     };
 
     let mut last_frame = Instant::now();
+    let mut frame_delta: u128 = 0;
+    let mut frame_count = 0;
 
     let white = [255, 255, 255, 0];
     let red = [255, 0, 0, 0];
@@ -125,6 +135,7 @@ fn main() -> Result<(), Error> {
 
             let frame = pixels.get_frame();
             clear(frame);
+
             for face in parsed_model.iter_faces() {
                 for vert_idx in 0..3 {
                     if let Some(v0) = parsed_model.get_vertex(face.point[vert_idx] as usize) {
@@ -136,12 +147,12 @@ fn main() -> Result<(), Error> {
                             let x1 = ((v1.x + 1.0) * SURFACE_WIDTH as f32 / 2.0).round();
                             let y1 = ((v1.y + 1.0) * SURFACE_HEIGHT as f32 / 2.0).round();
 
-                            if y0 < 0.0 || y1 < 0.0 {
-                                println!("TOO LOW");
-                            }
-
                             line(frame, x0 as u32, y0 as u32, x1 as u32, y1 as u32, white);
+                        } else {
+                            println!("Missing index {:?} for v1", vert_idx);
                         }
+                    } else {
+                        println!("Missing index {:?} for v0", vert_idx);
                     }
                 }
             }
@@ -150,10 +161,17 @@ fn main() -> Result<(), Error> {
             last_frame = Instant::now();
 
             let delta = last_frame - previous_frame_time;
+            frame_delta = frame_delta + delta.as_millis();
 
-            let fps = (1.0 / ((delta.as_millis() as f64) / 1000.0)).round();
+            if frame_delta >= 1000 {
+                window.set_title(&format!("tinyrenderer ({} fps)", frame_count));
 
-            window.set_title(&format!("tinyrenderer ({} fps)", fps));
+                frame_delta = frame_delta - 1000;
+                frame_count = 0;
+
+            }
+
+            frame_count = frame_count + 1;
         }
 
         if input.update(event) {
@@ -169,6 +187,4 @@ fn main() -> Result<(), Error> {
             window.request_redraw();
         }
     });
-
-    Ok(())
 }
