@@ -67,8 +67,8 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
     let dx = m_x1 as i32 - m_x0 as i32;
     let dy = m_y1 as i32 - m_y0 as i32;
 
-    let derror = i32::abs(dy) * 2;
-    let mut error = 0;
+    let derror = i64::abs(dy as i64) * 2;
+    let mut error: i64 = 0;
 
     let mut y = m_y0;
 
@@ -81,19 +81,21 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
 
         error += derror;
 
-        if error > dx {
+        if error > dx as i64 {
             if m_y1 > m_y0 {
                 y = y + 1;
             } else {
+                if y == 0 { continue; }
                 y = y - 1;
             }
-            error -= dx * 2;
+            error -= dx as i64 * 2;
         }
     }
 }
 
 fn main() -> Result<(), Error> {
     let model_path = Path::new("./obj/african_head.obj");
+    //let model_path = Path::new("./obj/SwordMaster.obj");
     println!("{:?}", model_path);
 
     let model_file = File::open(model_path).unwrap();

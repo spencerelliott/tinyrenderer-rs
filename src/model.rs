@@ -72,7 +72,10 @@ impl WaveformType for TextureCoordinate {
             return TextureCoordinate {
                 u: captured_texcoords["u"].parse().unwrap(),
                 v: captured_texcoords["v"].parse().unwrap(),
-                w: captured_texcoords["w"].parse().unwrap(),
+                w: match &captured_texcoords["w"] {
+                    "" => { 0.0 }
+                    _ => { captured_texcoords["w"].parse().unwrap() }
+                },
             }
         } else {
             println!("ERROR: Could not convert texcoord -> {:?}", texcoord);
