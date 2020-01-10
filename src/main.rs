@@ -22,6 +22,8 @@ use model::Model;
 const SURFACE_WIDTH: u32 = 800;
 const SURFACE_HEIGHT: u32 = 600;
 
+const ASPECT_RATIO: f32 = SURFACE_WIDTH as f32 / SURFACE_HEIGHT as f32;
+
 const BUFFER_SIZE: usize = (SURFACE_HEIGHT * SURFACE_WIDTH * 4) as usize;
 
 const CLEAR_BUFFER: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
@@ -142,9 +144,9 @@ fn main() -> Result<(), Error> {
                         if let Some(v1) =
                             parsed_model.get_vertex(face.point[(vert_idx + 1) % 3] as usize)
                         {
-                            let x0 = ((v0.x + 1.0) * SURFACE_WIDTH as f32 / 2.0).round();
+                            let x0 = ((v0.x + ASPECT_RATIO) * SURFACE_WIDTH as f32 / 2.0 / ASPECT_RATIO).round();
                             let y0 = ((v0.y + 1.0) * SURFACE_HEIGHT as f32 / 2.0).round();
-                            let x1 = ((v1.x + 1.0) * SURFACE_WIDTH as f32 / 2.0).round();
+                            let x1 = ((v1.x + ASPECT_RATIO) * SURFACE_WIDTH as f32 / 2.0 / ASPECT_RATIO).round();
                             let y1 = ((v1.y + 1.0) * SURFACE_HEIGHT as f32 / 2.0).round();
 
                             line(frame, x0 as u32, y0 as u32, x1 as u32, y1 as u32, white);
