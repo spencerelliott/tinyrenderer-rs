@@ -46,6 +46,10 @@ fn set_pixel(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
     pixel_slice[3] = rgba[3];
 }
 
+fn set_pixel_inverse(frame: &mut [u8], x: u32, y: u32, rgba: [u8; 4]) {
+    set_pixel(frame, y, x, rgba);
+}
+
 fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
     let steep = i32::abs(x0 as i32 - x1 as i32) < i32::abs(y0 as i32 - y1 as i32);
 
@@ -72,12 +76,14 @@ fn line(frame: &mut [u8], x0: u32, y0: u32, x1: u32, y1: u32, rgba: [u8; 4]) {
 
     let mut y = m_y0;
 
+    let pixel_func = if steep {
+        set_pixel_inverse
+    } else {
+        set_pixel
+    };
+
     for x in m_x0..m_x1 {
-        if steep {
-            set_pixel(frame, y, x, rgba);
-        } else {
-            set_pixel(frame, x, y, rgba);
-        }
+        pixel_func(frame, x, y, rgba);
 
         error += derror;
 
@@ -125,6 +131,9 @@ fn main() -> Result<(), Error> {
     let mut frame_delta: u128 = 0;
     let mut frame_count = 0;
 
+    let mut avg_render_time: u128 = 0;
+    let mut avg_clear_time: u128 = 0;
+
     let white = [255, 255, 255, 0];
     let red = [255, 0, 0, 0];
     let green = [0, 255, 0, 0];
@@ -138,8 +147,10 @@ fn main() -> Result<(), Error> {
             let previous_frame_time = last_frame;
 
             let frame = pixels.get_frame();
+            let before_clear_time = Instant::now();
             clear(frame);
 
+            let before_render_time = Instant::now();
             for face in parsed_model.iter_faces() {
                 for vert_idx in 0..3 {
                     if let Some(v0) = parsed_model.get_vertex(face.point[vert_idx] as usize) {
@@ -164,6 +175,9 @@ fn main() -> Result<(), Error> {
 
             last_frame = Instant::now();
 
+            avg_clear_time = ((avg_clear_time as f64 + (before_render_time - before_clear_time).as_millis() as f64) / 2.0) as u128;
+            avg_render_time = ((avg_render_time as f64 + (last_frame - before_render_time).as_millis() as f64) / 2.0) as u128;
+
             let delta = last_frame - previous_frame_time;
             frame_delta = frame_delta + delta.as_millis();
 
@@ -180,6 +194,8 @@ fn main() -> Result<(), Error> {
 
         if input.update(event) {
             if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
+                println!("Average clear time (ms): {:?}", avg_clear_time);
+                println!("Average render time (ms): {:?}", avg_render_time);
                 *control_flow = ControlFlow::Exit;
                 return;
             }
